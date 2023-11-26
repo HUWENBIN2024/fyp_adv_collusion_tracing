@@ -24,10 +24,17 @@ model_dir = f'saved_models/{args.model_name}-{args.dataset_name}'
 total = 0
 success_num = 0
 
-for i in tqdm(range(args.num_models)):
-    
+a = np.load(f"saved_collusion_adv_examples/{args.model_name}-{args.dataset_name}/{args.num_collusion}_attackers/{args.attack_name}.npz", allow_pickle=True)
 
-    
+img = torch.from_numpy(a['X']) # shape: n, 3, 32, 32
+img_adv = torch.from_numpy(a['X_attacked']) # shape: k, n, 3, 32, 32
+label = torch.from_numpy(a['y'])
+
+adv_perturb = img_adv - img
+collusion_perturb = np.mean(adv_perturb, axis=0) # linear combinition, (n, 3, 32, 32)
+img_collusion = img + collusion_perturb
+
+for i in tqdm(range(args.num_models)):
 
     head_dir = model_dir + f"/head_{i}/state_dict"
     tail_dir = model_dir + "/base_tail_state_dict"
@@ -63,22 +70,11 @@ for i in tqdm(range(args.num_models)):
 
     model = nn.Sequential(normalizer, wm, head, tail).eval()
 
-    for j in range(100):
-        if i == j:
-            continue
+    # y_pred = model(img).argmax(dim=1)
+    y_pred_adv = model(img_collusion).argmax(dim=1)
 
-        a = np.load(f"saved_adv_examples/{args.model_name}-{args.dataset_name}/head_{j}/{args.attack_name}.npz", allow_pickle=True)
-
-        img = torch.from_numpy(a['X'])
-        img_adv = torch.from_numpy(a['X_attacked'])
-        label = torch.from_numpy(a['y'])
-        
-    
-        # y_pred = model(img).argmax(dim=1)
-        y_pred_adv = model(img_adv).argmax(dim=1)
-
-        success_num += (y_pred_adv != label).sum().item()
-        total += len(label)
+    success_num += (y_pred_adv != label).sum().item()
+    total += len(label)
 
     
 
