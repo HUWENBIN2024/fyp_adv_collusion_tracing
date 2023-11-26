@@ -12,7 +12,14 @@ from tqdm import tqdm
 
 import numpy as np
 
-model_dir = 'saved_models/ResNet18-CIFAR10'
+parser = argparse.ArgumentParser()
+parser.add_argument('--model_name', help = 'Benchmark model structure.', choices = ['VGG16', 'ResNet18'])
+parser.add_argument('--dataset_name', help = 'Benchmark dataset used.', choices = ['CIFAR10', 'GTSRB'])
+parser.add_argument('--attack_name', help = 'Which black-box attack', choices = [ "Bandit", "NES", "HopSkipJump", "SignOPT", "SimBA-px"])
+parser.add_argument('-M', '--num_models', help = 'The number of models used.', type = int, default = 100)
+args = parser.parse_args()
+
+model_dir = f'saved_models/{args.model_name}-{args.dataset_name}'
 
 total = 0
 success_num = 0
@@ -31,11 +38,11 @@ for i in tqdm(range(100)):
     C, H, W = 3, 32, 32
 
     # Create the model and the dataset
-    dataset = eval(f'config.CIFAR10()')
+    dataset = eval(f'config.{args.dataset_name}()')
     training_set, testing_set = dataset.training_set, dataset.testing_set
     num_classes = dataset.num_classes
     means, stds = dataset.means, dataset.stds
-    Head, Tail = eval(f'ResNet18Head'), eval(f'ResNet18Tail')
+    Head, Tail = eval(f'{args.model_name}Head'), eval(f'{args.model_name}Tail')
     normalizer = transforms.Normalize(means, stds)
     # training_loader = torch.utils.data.DataLoader(training_set, batch_size = args.batch_size, shuffle = True, num_workers = args.num_workers)
     # testing_loader = torch.utils.data.DataLoader(testing_set, batch_size = args.batch_size, shuffle = True, num_workers = args.num_workers)
@@ -60,7 +67,7 @@ for i in tqdm(range(100)):
         if i == j:
             continue
 
-        a = np.load(f"/ssddata/whuak/fyp_adv_collusion_tracing/adv_tracing/saved_adv_examples/ResNet18-CIFAR10/head_{j}/NES.npz", allow_pickle=True)
+        a = np.load(f"/ssddata/whuak/fyp_adv_collusion_tracing/adv_tracing/saved_adv_examples/{args.model_name}-{args.dataset_name}/head_{j}/{args.attack_name}.npz", allow_pickle=True)
 
         img = torch.from_numpy(a['X'])
         img_adv = torch.from_numpy(a['X_attacked'])
