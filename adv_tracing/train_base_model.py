@@ -63,6 +63,10 @@ if __name__ == "__main__":
 
         print(f'Epoch {n}, loss {epoch_loss:.3f}, accuracy = {accuracy:.4f}.')
 
+        f = open(f"{save_dir}/{args.model_name}-{args.dataset_name}.txt", "a")
+        f.write(str(best_accuracy)+'\n')
+        f.close()
+
         # save the best result
         if accuracy > best_accuracy:
             best_accuracy = accuracy
@@ -70,3 +74,5 @@ if __name__ == "__main__":
             torch.save(base_model[2].state_dict(), f'{save_dir}/base_tail_state_dict')
 
     print(f'Completed the training of the base model, {args.model_name}-{args.dataset_name}, accuracy = {best_accuracy:.4f}.')
+    
+    

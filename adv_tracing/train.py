@@ -96,6 +96,10 @@ if __name__ == "__main__":
 
             print(f'Head {i}, epoch {n}, loss {epoch_loss:.3f}, accuracy = {accuracy:.4f}')
 
+            f = open(f"{save_dir}/{args.model_name}-{args.dataset_name}.txt", "a")
+            f.write(f'{args.num_heads}-{args.num_epochs}-{accuracy}\n')
+            f.close()
+
             # save the best result
             if accuracy > best_accuracy:
                 best_accuracy = accuracy

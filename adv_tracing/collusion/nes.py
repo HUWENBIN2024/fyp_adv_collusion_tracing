@@ -79,8 +79,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', help = 'Benchmark model structure.', choices = ['VGG16', 'ResNet18'])
     parser.add_argument('--dataset_name', help = 'Benchmark dataset used.', choices = ['CIFAR10', 'GTSRB'])
-    parser.add_argument('-M', '--num_models', help = 'The number of models used.', type = int, default = 100)
-    parser.add_argument('-n', '--num_samples', help = 'The number of adversarial samples per model.', type = int, default = 1)
+    parser.add_argument('-M', '--num_collusion', help = 'The number of attackers (k).', type = int, default = 2)
+    parser.add_argument('-n', '--num_samples', help = 'number of adv sample you want to generate.', type = int, default = 200)
     parser.add_argument('-c', '--cont', help = 'Continue from the stopped point last time.', action = 'store_true')
     parser.add_argument('-b', '--batch_size', help = 'The batch size used for attacks.', type = int, default = 10)
     args = parser.parse_args()
@@ -129,6 +129,9 @@ if __name__ == '__main__':
         )
         classifiers.append(classifier)
     classifiers = np.array(classifiers)
+
+    
+    
 
     for i, (model, c) in enumerate(zip(models, classifiers)):
         if os.path.isfile(f'{save_dir}/head_{i}/NES.npz') and args.cont:
