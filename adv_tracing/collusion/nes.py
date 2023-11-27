@@ -186,19 +186,15 @@ if __name__ == '__main__':
                 
             X_attacked_k = np.stack(X_attacked_k)
             
-                
             if mask_k.sum()> 0:
-                print(mask_k)
+                
                 original_images.append(X[mask_k])
-                print(X_attacked_k.shape)
                 attacked_images.append(X_attacked_k[:,mask_k])
                 
                 labels.append(y[mask_k])
                 head.append(model_index)
             
                 count_success += mask_k.sum()
-
-                print(X_attacked_k[:,mask_k].shape)
 
                 if count_success >= args.num_samples:
                     print(f'NES, {count_success} out of {args.num_samples} generated, done!')
@@ -212,5 +208,5 @@ if __name__ == '__main__':
     original_images = np.concatenate(original_images)
     attacked_images = np.concatenate(attacked_images, axis=1)
     labels = np.concatenate(labels)
-    os.makedirs(f'{save_dir}', exist_ok = True)
+    os.makedirs(f'{save_dir}/{args.num_collusion}_attackers', exist_ok = True)
     np.savez(f'{save_dir}/{args.num_collusion}_attackers/NES.npz', X = original_images, X_attacked_k = attacked_images, y = labels, head=head)

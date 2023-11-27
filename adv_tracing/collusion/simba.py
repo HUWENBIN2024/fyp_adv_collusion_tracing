@@ -10,6 +10,7 @@ from art.attacks.evasion import SimBA
 from models import VGG16Head, VGG16Tail, ResNet18Head, ResNet18Tail
 import config
 from watermark import Watermark
+from tqdm import tqdm
 
 
 if __name__ == '__main__':
@@ -17,7 +18,10 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', help = 'Benchmark model structure.', choices = ['VGG16', 'ResNet18'])
     parser.add_argument('--dataset_name', help = 'Benchmark dataset used.', choices = ['CIFAR10', 'GTSRB'])
     parser.add_argument('-M', '--num_models', help = 'The number of models used.', type = int, default = 100)
-    parser.add_argument('-n', '--num_samples', help = 'The number of adversarial samples per model.', type = int, default = 1)
+    
+    parser.add_argument('-k', '--num_collusion', help = 'The number of attackers (k).', type = int, default = 2)
+    parser.add_argument('-n', '--num_samples', help = 'number of adv sample you want to generate.', type = int, default = 200)
+    
     parser.add_argument('-c', '--cont', help = 'Continue from the stopped point last time.', action = 'store_true')
     parser.add_argument('-d', '--domain', help = 'Choose the domain of the attack.', choices = ['dct', 'px'], default = 'px')
     parser.add_argument('-b', '--batch_size', help = 'The batch size used for attacks.', type = int, default = 10)
@@ -65,40 +69,59 @@ if __name__ == '__main__':
         classifiers.append(classifier)
     classifiers = np.array(classifiers)
 
+    original_images, attacked_images, labels, head = [], [], [], []
+    count_success = 0
+    success_num = 0
+
+    np.random.seed(3407)
+
     # attacking
-    for i, c in enumerate(classifiers):    
-        if os.path.isfile(f'{save_dir}/head_{i}/SimBA-{args.domain}.npz') and args.cont:
-            continue
-
-        original_images, attacked_images, labels = [], [], []
-        count_success = 0
-
-        for X, y in testing_loader:
+    for X, y in tqdm(testing_loader):
+        with torch.no_grad():
+            model_index = np.random.choice(np.arange(args.num_models), args.num_collusion) 
+            mask_k = np.ones_like(y.numpy())
+            X_attacked_k = []
             X, y = X.numpy(), y.numpy()
-            pred = c.predict(X)
-            correct_mask = pred.argmax(axis = 1) == y
+            for k in range(args.num_collusion):
+                c = classifiers[k]
+                
+                pred = c.predict(X)
+                correct_mask = pred.argmax(axis = 1) == y
 
-            a = SimBA(c, attack = args.domain, verbose = args.verbose)
+                a = SimBA(c, attack = args.domain, verbose = args.verbose)
 
-            X_attacked = a.generate(X)
-            attacked_preds = np.vectorize(lambda z: z.predict(X_attacked), signature = '()->(m,n)')(classifiers) # (num_model, batch_size, num_class)
-            success_mask = attacked_preds.argmax(axis = -1) != y 
-            success_mask = np.logical_and(success_mask[i], success_mask.sum(axis=0) >= 2)
-            mask = np.logical_and(correct_mask, success_mask)
+                X_attacked = a.generate(X)
+                attacked_preds = np.vectorize(lambda z: z.predict(X_attacked), signature = '()->(m,n)')(classifiers) # (num_model, batch_size, num_class)
+                success_mask = attacked_preds.argmax(axis = -1) != y 
+                success_mask = np.logical_and(success_mask[i], success_mask.sum(axis=0) >= 2)
+                
+                mask = np.logical_and(correct_mask, success_mask)
+                mask_k = np.logical_and(mask_k, mask)
+
+                X_attacked_k.append(X_attacked)
+                    
+            X_attacked_k = np.stack(X_attacked_k)
+                
+            if mask_k.sum()> 0:
+                original_images.append(X[mask_k])
+                attacked_images.append(X_attacked_k[:,mask_k])
+                
+                labels.append(y[mask_k])
+                head.append(model_index)
             
-            original_images.append(X[mask])
-            attacked_images.append(X_attacked[mask])
-            labels.append(y[mask])
-            
-            count_success += mask.sum()
-            if count_success >= args.num_samples:
-                print(f'Head {i}, attack SimBA-{args.domain}, {count_success} out of {args.num_samples} generated, done!')
-                break
+                count_success += mask_k.sum()
+
+                if count_success >= args.num_samples:
+                    print(f'SimBA, {count_success} out of {args.num_samples} generated, done!')
+                    break
+                else:
+                    print(f'SimBA, {count_success} out of {args.num_samples} generated...')
+
             else:
-                print(f'Head {i}, attack SimBA-{args.domain}, {count_success} out of {args.num_samples} generated...')
-            
-        original_images = np.concatenate(original_images)
-        attacked_images = np.concatenate(attacked_images)
-        labels = np.concatenate(labels)
-        os.makedirs(f'{save_dir}/head_{i}', exist_ok = True)
-        np.savez(f'{save_dir}/head_{i}/SimBA-{args.domain}.npz', X = original_images, X_attacked = attacked_images, y = labels)
+                print('not generated!')
+
+    original_images = np.concatenate(original_images)
+    attacked_images = np.concatenate(attacked_images, axis=1)
+    labels = np.concatenate(labels)
+    os.makedirs(f'{save_dir}/{args.num_collusion}_attackers', exist_ok = True)
+    np.savez(f'{save_dir}/{args.num_collusion}_attackers/NES.npz', X = original_images, X_attacked_k = attacked_images, y = labels, head=head)

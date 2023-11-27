@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--batch_size', help = 'Batch size.', type = int, default = 128)
     parser.add_argument('-e', '--num_epochs', help = 'Number of epochs.', type = int, default = 50)
     parser.add_argument('-lr', '--learning_rate', help = 'Learning rate.', type = float, default = 1e-3)
+    parser.add_argument('--cuda', help = 'which gpu', type = int, default = 0)
     args = parser.parse_args()
 
     # Create the model and the dataset
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     means, stds = dataset.means, dataset.stds
     Head, Tail = eval(f'{args.model_name}Head'), eval(f'{args.model_name}Tail')
     base_model = nn.Sequential(transforms.Normalize(means, stds), Head(), Tail(num_classes))
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = f'cuda:{args.cuda}' if torch.cuda.is_available() else 'cpu'
     base_model.to(device)
     training_loader = torch.utils.data.DataLoader(training_set, batch_size=args.batch_size, shuffle = True, num_workers = args.num_workers)
     testing_loader = torch.utils.data.DataLoader(testing_set, batch_size=args.batch_size, num_workers = args.num_workers)

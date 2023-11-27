@@ -24,24 +24,19 @@ model_dir = f'saved_models/{args.model_name}-{args.dataset_name}'
 total = 0
 success_num = 0
 
+dataset = eval(f'config.{args.dataset_name}()')
+training_set, testing_set = dataset.training_set, dataset.testing_set
+num_classes = dataset.num_classes
+means, stds = dataset.means, dataset.stds
+
 for i in tqdm(range(args.num_models)):
     
-
-    
-
     head_dir = model_dir + f"/head_{i}/state_dict"
     tail_dir = model_dir + "/base_tail_state_dict"
     wm_dir = model_dir + f'/head_{i}/watermark.npy'
 
-
-    
-    C, H, W = 3, 32, 32
-
     # Create the model and the dataset
-    dataset = eval(f'config.{args.dataset_name}()')
-    training_set, testing_set = dataset.training_set, dataset.testing_set
-    num_classes = dataset.num_classes
-    means, stds = dataset.means, dataset.stds
+    
     Head, Tail = eval(f'{args.model_name}Head'), eval(f'{args.model_name}Tail')
     normalizer = transforms.Normalize(means, stds)
     # training_loader = torch.utils.data.DataLoader(training_set, batch_size = args.batch_size, shuffle = True, num_workers = args.num_workers)
