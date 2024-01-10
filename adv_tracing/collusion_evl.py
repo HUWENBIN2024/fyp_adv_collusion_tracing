@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model_name', help = 'Benchmark model structure.', choices = ['VGG16', 'ResNet18'])
 parser.add_argument('--dataset_name', help = 'Benchmark dataset used.', choices = ['CIFAR10', 'GTSRB'])
 parser.add_argument('-k', '--num_collusion', help = 'The number of attackers (k).', type = int, default = 2)
+parser.add_argument('-n', '--num_samples', help = 'The number of generated collusive samples.', type = int, default = 100)
 parser.add_argument('--attack_name', help = 'Which black-box attack', choices = [ "Bandit", "NES", "HopSkipJump", "SignOPT", "SimBA-px"])
 parser.add_argument('--collusion_attack', help = 'collusion methods', choices = [ "mean", "max", "min", "median", "negative", "negative_prob"])
 parser.add_argument('-M', '--num_models', help = 'The number of models used.', type = int, default = 100)
@@ -27,7 +28,7 @@ total = 0
 success_num = 0
 
 prob = 0.8
-a = np.load(f"saved_collusion_adv_examples/{args.model_name}-{args.dataset_name}/{args.num_collusion}_attackers/{args.attack_name}.npz", allow_pickle=True)
+a = np.load(f"saved_collusion_adv_examples/{args.model_name}-{args.dataset_name}/{args.num_collusion}_attackers/{args.attack_name}_{args.num_samples}_num_of_samples.npz", allow_pickle=True)
 
 img = a['X'] # shape: n, 3, 32, 32
 img_adv = a['X_attacked_k'] # shape: k, n, 3, 32, 32
@@ -38,7 +39,7 @@ head_index = a['head']
 adv_perturb = img_adv - img
 
 if args.collusion_attack =='mean':
-    collusion_perturb = np.mean(adv_perturb, axis=0) # linear combinition, (n, 3, 32, 32)
+    collusion_perturb = np.mean(adv_perturb, axis=0) # (n, 3, 32, 32)
 elif args.collusion_attack =='max':
     collusion_perturb = np.max(adv_perturb, axis=0) 
 elif args.collusion_attack =='min':
@@ -108,3 +109,8 @@ for i in tqdm(range(args.num_models)):
 
 
 print("success rate of tranfered adv: ", success_num / total, ", the num of successful and total samples: ", success_num, total)
+
+os.makedirs('evl', exist_ok=True)
+f = open("col_evl.txt", "a") 
+f.write(f"{args.attack_name} attack, {args.collusion_attack} collusion: {success_num / total}\n")
+f.close()        

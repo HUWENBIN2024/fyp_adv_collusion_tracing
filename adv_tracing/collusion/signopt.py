@@ -388,14 +388,15 @@ if __name__ == '__main__':
 
     np.random.seed(3407)
 
+    k = args.num_collusion
+
     for X, y in tqdm(testing_loader):
         with torch.no_grad():
-            model_index = np.random.choice(np.arange(args.num_models), args.num_collusion) 
+            model_index = np.random.choice(np.arange(args.num_models), k).astype(int)
             mask_k = np.ones_like(y.numpy())
             X_attacked_k = []
-        
-            for k in range(args.num_collusion):
-                model, c = models[k], classifiers[k]
+            for model_id in model_index:
+                model, c = models[model_id], classifiers[model_id]
                 pred = c.predict(X.numpy())
                 correct_mask = pred.argmax(axis = -1) == y.numpy()
 
@@ -407,7 +408,7 @@ if __name__ == '__main__':
                 attacked_preds = np.vectorize(lambda z: z.predict(X_attacked), signature = '()->(m,n)')(classifiers)
                 
                 success_mask = attacked_preds.argmax(axis = -1) != y.numpy()
-                success_mask = np.logical_and(success_mask[i], success_mask.sum(axis=0) >= 2)
+                success_mask = np.logical_and(success_mask[model_id], success_mask.sum(axis=0) >= 2)
 
                 mask = np.logical_and(correct_mask, success_mask)
                 mask_k = np.logical_and(mask_k, mask)
@@ -421,7 +422,8 @@ if __name__ == '__main__':
                 attacked_images.append(X_attacked_k[:,mask_k])
                 
                 labels.append(y[mask_k])
-                head.append(model_index)
+                for _ in range(mask_k.sum().item()):
+                    head.append(model_index)
             
                 count_success += mask_k.sum()
 
@@ -436,5 +438,5 @@ if __name__ == '__main__':
     original_images = np.concatenate(original_images)
     attacked_images = np.concatenate(attacked_images, axis=1)
     labels = np.concatenate(labels)
-    os.makedirs(f'{save_dir}/{args.num_collusion}_attackers', exist_ok = True)
-    np.savez(f'{save_dir}/{args.num_collusion}_attackers/NES.npz', X = original_images, X_attacked_k = attacked_images, y = labels, head=head)
+    os.makedirs(f'{save_dir}/{k}_attackers', exist_ok = True)
+    np.savez(f'{save_dir}/{k}_attackers/SignOPT_{args.num_samples}_num_of_samples.npz', X = original_images, X_attacked_k = attacked_images, y = labels, head=head)
