@@ -42,6 +42,11 @@ class Watermark(nn.Module):
 
 	@staticmethod
 	def random(num_masked_dims, C, H, W):
+		'''
+		def random(): randomly pick some pixels to mask and create the watermark class.
+
+		num_masked_dims: the number of pixels masked by the mask.
+		'''
 		indices = np.random.choice(C * H * W, size = num_masked_dims, replace = False)
 		watermark = Watermark(np.stack([indices // (H * W), (indices // W) % H, indices % W], axis = -1))
 		return watermark 
