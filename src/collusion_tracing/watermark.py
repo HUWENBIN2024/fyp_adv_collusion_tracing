@@ -10,7 +10,8 @@ class Watermark(nn.Module):
 		locations: (N, 3) [[cha0, row0, col0], [cha1, row1, col1], [cha2, row2, col2], ...]
 		'''
 		super().__init__()
-		assert len(locations.shape) == 2 and locations.shape[1] == 3
+		# assert len(locations.shape) == 2 and locations.shape[1] == 3
+		assert locations.shape[1] == 3
 		self.locations = locations
 		
 			

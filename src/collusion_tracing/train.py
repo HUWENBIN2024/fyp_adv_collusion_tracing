@@ -9,10 +9,43 @@ from models import VGG16Head, VGG16Tail, ResNet18Head, ResNet18Tail
 import config
 from watermark import Watermark
 
+from bibdcalc import BIBD, BIBDParams
+from tqdm import tqdm
+import numpy as np
 
 '''
 Train the multi-head-one-tail model.
 '''
+
+def get_collusion_watermark_location(v=3*32*32, k=2, b=100):
+    '''
+    func: get location of the masked pixels, which will be used to generate watermark for collusion tracing.
+
+    return: a list of np arrays. 
+    '''
+    lambda_ = 1  # Lambda value
+
+    # Create BIBDParams object with the specified parameters
+    params = BIBDParams(None, v, k, lambda_)
+
+    # Generate the blocks for the BIBD
+    blocks_set = []
+    locations = []
+    for i in tqdm(range(b)):
+        block = set((i * k + j) % v for j in range(k))
+        blocks_set.append(block)
+        block_ = np.array(list(block))
+        locations.append(np.stack([block_ // (H * W), (block_ // W) % H, block_ % W], axis = -1))
+
+
+    # Create the BIBD with the specified blocks and parameters
+    bibd = BIBD(blocks_set, params)
+    print("bibd design generated!!!")
+
+    # # Get the incidence matrix
+    matrix = bibd.get_incidency_matrix()
+    # print('matrix generated!!!')
+    return locations
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -24,6 +57,10 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--num_epochs', help = 'Number of epochs.', type = int, default = 10)
     parser.add_argument('-lr', '--learning_rate', help = 'Learning rate.', type = float, default = 1e-3)
     parser.add_argument('-md', '--masked_dims', help = 'Number of masked dimensions', type = int, default = 100)
+
+    # collusion
+    parser.add_argument('-nc', '--num_collusion', help = 'number of collusive attacks.', type = int, default = 2)
+
     
     args = parser.parse_args()
     
@@ -53,6 +90,9 @@ if __name__ == "__main__":
     
     tail.to(device)
 
+    # location array for watermark
+    location_list = get_collusion_watermark_location(v = C*H*W , k = args.num_collusion, b = args.num_heads)
+
     
     # training
     
@@ -60,7 +100,8 @@ if __name__ == "__main__":
         
         os.makedirs(f'{save_dir}/head_{i}', exist_ok = True)
         
-        head = nn.Sequential(Watermark.random(args.masked_dims, C, H, W), Head())
+        # head = nn.Sequential(Watermark.random(args.masked_dims, C, H, W), Head())
+        head = nn.Sequential(Watermark(location_list[i]), Head())
         
         head.to(device)
         head[0].save(f'{save_dir}/head_{i}/watermark.npy')
