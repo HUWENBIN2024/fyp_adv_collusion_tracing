@@ -7,6 +7,7 @@ import argparse
 from models import VGG16Head, VGG16Tail, ResNet18Head, ResNet18Tail
 import config
 from watermark import Watermark
+from tqdm import tqdm
 
 
 if __name__ == '__main__':
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     
     for a in args.attacks:
         correct = 0
-        for i in range(args.num_models):
+        for i in tqdm(range(args.num_models)):
             adv_npz = np.load(f'{adv_dir}/head_{i}/{a}.npz')
             Loss = nn.CrossEntropyLoss()
             X, X_attacked, y = adv_npz['X'][:args.num_samples], adv_npz['X_attacked'][:args.num_samples], adv_npz['y'][:args.num_samples]

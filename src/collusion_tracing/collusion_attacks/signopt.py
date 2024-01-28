@@ -10,7 +10,7 @@ from art.estimators.classification import PyTorchClassifier
 from models import VGG16Head, VGG16Tail, ResNet18Head, ResNet18Tail
 import config
 from watermark import Watermark
-from attacks.decision import DecisionBlackBoxAttack
+from collusion_attacks.decision import DecisionBlackBoxAttack
 
 from tqdm import tqdm
 

@@ -4,7 +4,7 @@ import torch
 
 from torch import Tensor as t
 
-from attacks import *
+from collusion_attacks import *
 
 class ScoreBlackBoxAttack(object):
     def __init__(self, max_loss_queries=np.inf,

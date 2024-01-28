@@ -10,8 +10,8 @@ from art.estimators.classification import PyTorchClassifier
 from models import VGG16Head, VGG16Tail, ResNet18Head, ResNet18Tail
 import config
 from watermark import Watermark
-from attacks.score import ScoreBlackBoxAttack
-from attacks import *
+from collusion_attacks.score import ScoreBlackBoxAttack
+from collusion_attacks import *
 
 from tqdm import tqdm
 

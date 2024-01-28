@@ -1,4 +1,4 @@
-from attacks import *
+from collusion_attacks import *
 
 import torch
 

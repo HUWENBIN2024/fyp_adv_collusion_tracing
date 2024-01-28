@@ -1,46 +1,26 @@
 # fyp_adv_collusion_tracing
-This is the repo for the final year project CMH1.
-
-Firstly, change direction to adv_tracing.
-```
-cd adv_tracing
-```
+This is the repo for the final year project.
 
 ## Baseline in ICML paper
-Evaluate transferability of adv attacks:
+To conduct baseline experiments, cd to src/adv_tracing and follow the instruction in the README file.  
+
+To evaluate the transferability of adv attacks:
 ```
 python adv_evl.py --model_name ResNet18 --dataset_name CIFAR10 --attack_name SimBA-px
 ```
 
-## Collusion Adv Attack
-Generate collusion adversarial samples:
+## Collusive Adv Attack
+Firstly, cd to src/collusion_tracing.  
+To generate collusive adversarial samples:
 ```
-python -m collusion.nes --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 200 -b 128
+python -m collusion.nes --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 1000 -b 128
 ```
-
-Collusion evalution:
+To evaluate the transferability of the collusive attacks:
 ```
 python collusion_evl.py --model_name ResNet18 --dataset_name CIFAR10 --attack_name NES --collusion_attack mean
 ```
-For details of the arguments, please go to see the desciption in related py flies.
+To calculate the tracing back accuracy:
+```
+python collusion_trace_acc.py --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 1000 --attack_name NES --collusion_attack mean -M 100
+```
 
-CUDA_VISIBLE_DEVICES=3 python -m collusion.nes --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 200 -b 10 
-CUDA_VISIBLE_DEVICES=4 python -m collusion.hsj --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 200 -b 10
-CUDA_VISIBLE_DEVICES=5 python -m collusion.bandit --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 200 -b 10
-CUDA_VISIBLE_DEVICES=6 python -m collusion.signopt --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 200 -b 10
-CUDA_VISIBLE_DEVICES=7 python -m collusion.simba --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 200 -b 10
-
-python collusion_evl.py --model_name ResNet18 --dataset_name CIFAR10 --attack_name Bandit --collusion_attack mean
-
-CUDA_VISIBLE_DEVICES=3 python -m collusion.nes --model_name ResNet18 --dataset_name CIFAR10 -k 3 -n 1000 -b 10 
-CUDA_VISIBLE_DEVICES=4 python -m collusion.hsj --model_name ResNet18 --dataset_name CIFAR10 -k 3 -n 1000 -b 10
-CUDA_VISIBLE_DEVICES=5 python -m collusion.bandit --model_name ResNet18 --dataset_name CIFAR10 -k 3 -n 1000 -b 10
-CUDA_VISIBLE_DEVICES=6 python -m collusion.signopt --model_name ResNet18 --dataset_name CIFAR10 -k 3 -n 1000 -b 10
-CUDA_VISIBLE_DEVICES=7 python -m collusion.simba --model_name ResNet18 --dataset_name CIFAR10 -k 3 -n 1000 -b 10
-
-
-CUDA_VISIBLE_DEVICES=3 python -m collusion.nes --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 100 -b 10 &
-CUDA_VISIBLE_DEVICES=4 python -m collusion.hsj --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 100 -b 10 &
-CUDA_VISIBLE_DEVICES=5 python -m collusion.bandit --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 100 -b 10 &
-CUDA_VISIBLE_DEVICES=6 python -m collusion.signopt --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 100 -b 10 &
-CUDA_VISIBLE_DEVICES=7 python -m collusion.simba --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 100 -b 10 
