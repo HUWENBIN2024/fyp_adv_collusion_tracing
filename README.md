@@ -10,7 +10,15 @@ python adv_evl.py --model_name ResNet18 --dataset_name CIFAR10 --attack_name Sim
 ```
 
 ## Collusive Adv Attack
-Firstly, cd to src/collusion_tracing.  
+Firstly, cd to src/collusion_tracing.   
+To train a base model:  
+```
+python train_base_model.py --model_name ResNet18 --dataset_name CIFAR10
+```
+To train different model copies:  
+```
+CUDA_VISIBLE_DEVICES=0 python train.py --model_name ResNet18 --dataset_name CIFAR10 --num_pixel_watermarked 300
+``` 
 To generate collusive adversarial samples:
 ```
 python -m collusion.nes --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 1000 -b 128
