@@ -21,7 +21,7 @@ CUDA_VISIBLE_DEVICES=0 python train.py --model_name ResNet18 --dataset_name CIFA
 ``` 
 To generate collusive adversarial samples:
 ```
-python -m collusion.nes --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 1000 -b 128
+python -m collusion_attacks.nes --model_name ResNet18 --dataset_name CIFAR10 -k 2 -n 1000 -b 128
 ```
 To evaluate the transferability of the collusive attacks:
 ```
