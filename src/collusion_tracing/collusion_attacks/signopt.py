@@ -412,7 +412,9 @@ if __name__ == '__main__':
 
                 mask = np.logical_and(correct_mask, success_mask)
                 mask_k = np.logical_and(mask_k, mask)
-
+                if mask_k.sum() < 4:
+                    print("run continue due to lack of successful attacks")
+                    continue
                 X_attacked_k.append(X_attacked)
             
             X_attacked_k = np.stack(X_attacked_k)

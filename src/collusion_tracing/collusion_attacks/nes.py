@@ -177,7 +177,9 @@ if __name__ == '__main__':
 
                 mask = np.logical_and(correct_mask, success_mask)
                 mask_k = np.logical_and(mask_k, mask)
-
+                if mask_k.sum() < 4:
+                    print("run continue due to lack of successful attacks")
+                    continue
                 X_attacked_k.append(X_attacked)
                 
             X_attacked_k = np.stack(X_attacked_k)
@@ -202,8 +204,8 @@ if __name__ == '__main__':
             else:
                 print('not generated!')
     
-    original_images = np.concatenate(original_images)
-    attacked_images = np.concatenate(attacked_images, axis=1)
-    labels = np.concatenate(labels)
+    original_images = np.concatenate(original_images) # [num_samples(+E), 3, 32, 32]
+    attacked_images = np.concatenate(attacked_images, axis=1) # [num_collusion, num_samples(+E), 3, 32, 32]
+    labels = np.concatenate(labels) # [num_samples(+E),]   
     os.makedirs(f'{save_dir}/{k}_attackers', exist_ok = True)
     np.savez(f'{save_dir}/{k}_attackers/NES_{args.num_samples}_num_of_samples.npz', X = original_images, X_attacked_k = attacked_images, y = labels, head=head)
