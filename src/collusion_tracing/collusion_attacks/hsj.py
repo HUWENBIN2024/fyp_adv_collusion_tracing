@@ -85,7 +85,7 @@ if __name__ == '__main__':
     for X, y in tqdm(testing_loader):
         with torch.no_grad():
             
-            model_index = np.random.choice(np.arange(k), k).astype(int)
+            model_index = np.random.choice(np.arange(k), k, replace=False).astype(int)
             mask_k = np.ones_like(y.numpy())
             X_attacked_k = []
             X, y = X.numpy(), y.numpy()

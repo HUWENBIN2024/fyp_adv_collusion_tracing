@@ -12,46 +12,76 @@ from watermark import Watermark
 from bibdcalc import BIBD, BIBDParams
 from tqdm import tqdm
 import numpy as np
+import random
+random.seed(3407)
+
+
 
 '''
 Train the multi-head-one-tail model.
 '''
 
-def get_collusion_watermark_location(v=3*32*32, k=2, b=100):
-    '''
-    func: get location of the masked pixels, which will be used to generate watermark for collusion tracing.
+# def get_collusion_watermark_location(v=3*32*32, k=2, b=100):
+#     '''
+#     func: get location of the masked pixels, which will be used to generate watermark for collusion tracing.
 
-    return: a list of np arrays. 
-    '''
-    lambda_ = 1  # Lambda value
+#     return: a list of np arrays. 
+#     '''
+#     lambda_ = 1  # Lambda value
 
-    # Create BIBDParams object with the specified parameters
-    params = BIBDParams(None, v, k, lambda_)
+#     # Create BIBDParams object with the specified parameters
+#     params = BIBDParams(None, v, k, lambda_)
 
-    # Generate the blocks for the BIBD
-    blocks_set = []
-    locations = []
-    for i in tqdm(range(b)):
-        block = set((i * k + j) % v for j in range(k))
-        blocks_set.append(block)
-        block_ = np.array(list(block))
-        locations.append(np.stack([block_ // (H * W), (block_ // W) % H, block_ % W], axis = -1))
+#     # Generate the blocks for the BIBD
+#     blocks_set = []
+#     locations = []
+#     for i in tqdm(range(b)):
+#         block = set((i * k + j) % v for j in range(k))
+#         blocks_set.append(block)
+#         block_ = np.array(list(block))
+#         locations.append(np.stack([block_ // (H * W), (block_ // W) % H, block_ % W], axis = -1))
 
 
-    # Create the BIBD with the specified blocks and parameters
-    bibd = BIBD(blocks_set, params)
-    print("bibd design generated!!!")
+#     # Create the BIBD with the specified blocks and parameters
+#     bibd = BIBD(blocks_set, params)
+#     print("bibd design generated!!!")
 
-    # # Get the incidence matrix
-    matrix = bibd.get_incidency_matrix()
-    # print('matrix generated!!!')
-    return locations
+#     # # Get the incidence matrix
+#     matrix = bibd.get_incidency_matrix()
+#     # print('matrix generated!!!')
+#     return locations
+
+def generate_and_acc_code_book(n, v, K):
+    code_book = []
+    for _ in range(n):
+        # vector = [random.choice([0 , 0 ,0 ,0 ,0, 0, 0, 0, 0, 1]) for _ in range(v)]
+        vector = [random.choice([0, 0, 0, 0, 1]) for _ in range(v)]
+
+        code_book.append(vector)
+        while not is_and_acc(code_book, K):
+            vector = [random.choice([0, 1]) for _ in range(v)]
+            code_book[-1] = vector
+    code_book = np.array(code_book)
+    
+    
+    return code_book
+
+
+def is_and_acc(code_book, K):
+    for i in range(len(code_book)):
+        for j in range(i + 1, len(code_book)):
+            subset_i = code_book[:i+1]
+            subset_j = code_book[:j+1]
+            if len(subset_i) <= K and len(subset_j) <= K:
+                if all(a & b == a for a, b in zip(subset_i[-1], subset_j[-1])):
+                    return False
+    return True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', help = 'Benchmark model structure.', choices = ['VGG16', 'ResNet18'])
     parser.add_argument('--dataset_name', help = 'Benchmark dataset used.', choices = ['CIFAR10', 'GTSRB', 'TINY'])
-    parser.add_argument('--num_workers', help = 'Number of workers', type = int, default = 2)
+    parser.add_argument('--num_workers', help = 'Number of workers', type = int, default = 0)
     parser.add_argument('-N', '--num_heads', help = 'Number of heads.', type = int, default = 100)
     parser.add_argument('-b', '--batch_size', help = 'Batch size.', type = int, default = 128)
     parser.add_argument('-e', '--num_epochs', help = 'Number of epochs.', type = int, default = 10)
@@ -59,8 +89,8 @@ if __name__ == "__main__":
     # parser.add_argument('-md', '--masked_dims', help = 'Number of masked dimensions', type = int, default = 100)
 
     # collusion
-    parser.add_argument('-nc', '--num_collusion', help = 'number of collusive attacks.', type = int, default = 2)
-    parser.add_argument('-np', '--num_pixel_watermarked', help = 'number of pixel watermarked.', type = int, default = 300)
+    # parser.add_argument('-nc', '--num_collusion', help = 'number of collusive attacks.', type = int, default = 2)
+    # parser.add_argument('-np', '--num_pixel_watermarked', help = 'number of pixel watermarked.', type = int, default = 300)
 
 
     
@@ -93,8 +123,8 @@ if __name__ == "__main__":
     tail.to(device)
 
     # location array for watermark
-    location_list = get_collusion_watermark_location(v = C*H*W , k = args.num_pixel_watermarked, b = args.num_heads)
-
+    code_book = generate_and_acc_code_book(n=args.num_heads, v=3*32*32, K=5)
+    # (100,3072)
     
     # training
     
@@ -103,7 +133,8 @@ if __name__ == "__main__":
         os.makedirs(f'{save_dir}/head_{i}', exist_ok = True)
         
         # head = nn.Sequential(Watermark.random(args.masked_dims, C, H, W), Head())
-        head = nn.Sequential(Watermark(location_list[i]), Head())
+        pos = np.where(code_book[i].reshape(3,32,32)==1)
+        head = nn.Sequential(Watermark(np.array(pos).T), Head())
         
         head.to(device)
         head[0].save(f'{save_dir}/head_{i}/watermark.npy')
@@ -116,7 +147,7 @@ if __name__ == "__main__":
             head.train()
             epoch_mask_grad_norm, epoch_mask_grad_norm_inverse = 0., 0.
             epoch_loss = 0.0
-            for X, y in training_loader:
+            for X, y in tqdm(training_loader):
                 X, y = X.to(device), y.to(device)
                 optimizer.zero_grad()
                 out_clean = tail(head(normalizer(X)))

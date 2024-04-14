@@ -17,7 +17,7 @@ python train_base_model.py --model_name ResNet18 --dataset_name CIFAR10
 ```
 To train different model copies:  
 ```
-CUDA_VISIBLE_DEVICES=0 python train.py --model_name ResNet18 --dataset_name CIFAR10 --num_pixel_watermarked 300
+CUDA_VISIBLE_DEVICES=0 python train.py --model_name ResNet18 --dataset_name CIFAR10 
 ``` 
 To generate collusive adversarial samples:
 ```
