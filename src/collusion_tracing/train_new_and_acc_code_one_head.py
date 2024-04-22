@@ -115,7 +115,7 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # Place to save the trained model
-    save_dir = f'saved_models_50_masked_pixel/{args.model_name}-{args.dataset_name}'
+    save_dir = f'saved_models/{args.model_name}-{args.dataset_name}'
     os.makedirs(save_dir, exist_ok = True)
 
     # Load the tail of the model
